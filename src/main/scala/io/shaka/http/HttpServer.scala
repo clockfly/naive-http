@@ -12,10 +12,14 @@ import io.shaka.http.HttpServer.ToLog
 import io.shaka.http.Response.respond
 import io.shaka.http.Status.NOT_FOUND
 
-class HttpServer(private val usePort: Int = 0, otherLog: ToLog, sslConfig: HttpServerSslConfig = NoSslConfig) {
+class HttpServer(private val host: String, private val usePort: Int, otherLog: ToLog, sslConfig: HttpServerSslConfig) {
   import HttpServer.createServer
 
-  val server = createServer(usePort, sslConfig)
+  def this(usePort: Int = 0, otherLog: ToLog, sslConfig: HttpServerSslConfig = NoSslConfig) {
+    this("0.0.0.0", usePort, otherLog, sslConfig)
+  }
+
+  val server = createServer(host, usePort, sslConfig)
   server.setExecutor(null)
   server.createContext("/", new SunHttpHandlerAdapter((req) => respond("No handler defined!").status(NOT_FOUND)))
 
@@ -54,8 +58,8 @@ object HttpServer {
   def httpsMutualAuth(keyStoreConfig: PathAndPassword, trustStoreConfig: PathAndPassword, port: Int = 0) =
     https(keyStoreConfig, Some(trustStoreConfig), port)
 
-  private def createServer(requestedPort: Int, sslConfig: HttpServerSslConfig): SunHttpServer = {
-    val address: InetSocketAddress = new InetSocketAddress(requestedPort)
+  private def createServer(host: String, requestedPort: Int, sslConfig: HttpServerSslConfig): SunHttpServer = {
+    val address: InetSocketAddress = new InetSocketAddress(host, requestedPort)
     val httpServerProvider: HttpServerProvider = HttpServerProvider.provider()
 
     sslConfig match {
